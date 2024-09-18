@@ -137,7 +137,7 @@ import { TasksInterface, TypeReminderEnum } from './util/EventReminder'
 
 import { useEventsToRecorderStore } from './stores/eventsToRecorder'
 
-function formattedDate(dateToFormat: string) {
+function formattedDate(dateToFormat: string | Date) {
   const dateParsed = new Date(dateToFormat)
   console.warn(dateParsed)
   console.assert(dateParsed instanceof Date)
@@ -146,16 +146,16 @@ function formattedDate(dateToFormat: string) {
 }
 
 function msToTime(ms: number) {
-  let seconds = Math.floor((ms / 1000) % 60)
-  let minutes = Math.floor((ms / (1000 * 60)) % 60)
-  let hours = Math.floor((ms / (1000 * 60 * 60)) % 24)
+  const seconds = Math.floor((ms / 1000) % 60)
+  const minutes = Math.floor((ms / (1000 * 60)) % 60)
+  const hours = Math.floor((ms / (1000 * 60 * 60)) % 24)
 
   // Formato de dos dígitos para horas, minutos y segundos
-  hours = hours < 10 ? '0' + hours : hours
-  minutes = minutes < 10 ? '0' + minutes : minutes
-  seconds = seconds < 10 ? '0' + seconds : seconds
+  const hoursStr = hours < 10 ? '0' + hours : hours
+  const minutesStr = minutes < 10 ? '0' + minutes : minutes
+  const secondsStr = seconds < 10 ? '0' + seconds : seconds
 
-  return hours + ':' + minutes + ':' + seconds
+  return hoursStr + ':' + minutesStr + ':' + secondsStr
 }
 
 const showNotificatoinHandle = (title: string, body: string) => {
