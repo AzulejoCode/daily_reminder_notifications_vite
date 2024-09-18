@@ -1,3 +1,110 @@
+<template>
+  <img alt="logo" class="logo" src="./assets/electron.svg" />
+  <div class="creator">Daily Reminder Notifications</div>
+  <div class="text">
+    Añade tus
+    <span class="vue">tareas</span>
+    y/o
+    <span class="vue">eventos</span>
+    especiales y te las
+    <span class="ts">Recordaré</span>
+  </div>
+  <p class="tip">
+    A continuación se mostrarán todos los <code>eventos</code> o <code>tareas</code> que quieres que
+    te recuerde:
+  </p>
+  <table v-if="listTasksComputed.length > 0">
+    <tr>
+      <th>Tipo</th>
+      <th>Título</th>
+      <th>Descripción</th>
+      <th>Fecha</th>
+      <th>Configuración ⚙️</th>
+    </tr>
+    <tr v-for="(task, task_index) in listTasksComputed">
+      <td>
+        <select
+          :id="task_index + 'f_input_type'"
+          :name="task_index + 'f_input_type'"
+          :disabled="!listIndexTasksEditable.includes(task_index)"
+          :value="task.type"
+        >
+          <option
+            v-for="(typeEvent, typeEventKey) in TypeReminderEnum"
+            :key="task_index + typeEventKey"
+            :value="typeEvent"
+          >
+            {{ typeEvent }}
+          </option>
+        </select>
+      </td>
+      <td>
+        <input
+          id="f_input_title"
+          name="f_input_title"
+          type="text"
+          :readonly="!listIndexTasksEditable.includes(task_index)"
+          :value="task.title"
+        />
+      </td>
+      <td>
+        <input
+          id="f_input_description"
+          name="f_input_description"
+          type="text"
+          :readonly="!listIndexTasksEditable.includes(task_index)"
+          :value="task.description"
+        />
+      </td>
+      <td>
+        <input
+          id="f_input_special_date"
+          name="f_input_special_date"
+          type="date"
+          :readonly="!listIndexTasksEditable.includes(task_index)"
+          :value="formattedDate(task.specialDate)"
+        />
+      </td>
+      <td>
+        <input
+          v-show="!listIndexTasksEditable.includes(task_index)"
+          id="f_input_edit"
+          name="f_input_edit"
+          type="button"
+          value="✏️"
+          @click="setToEdit(task_index)"
+        />
+        <input
+          v-show="listIndexTasksEditable.includes(task_index)"
+          id="f_input_save_changes"
+          name="f_input_save_changes"
+          type="button"
+          value="✅"
+          @click="saveChanges(task_index)"
+        />
+        <input
+          v-show="listIndexTasksEditable.includes(task_index)"
+          id="f_input_discarg_changes"
+          name="f_input_discarg_changes"
+          type="button"
+          value="🚨"
+          @click="cancelChanges(task_index)"
+        />
+      </td>
+    </tr>
+  </table>
+  <table v-else>
+    <tr>
+      <th>Aun no tienes nada guardado 🗑️!</th>
+    </tr>
+  </table>
+  <div class="actions">
+    <div class="action">
+      <a target="_blank" rel="noreferrer" @click="sendNotification()">Show Notification</a>
+    </div>
+  </div>
+  <Versions />
+</template>
 <script setup lang="ts">
 import Versions from './components/Versions.vue'
 import { computed, onMounted, ref } from 'vue'
@@ -97,6 +204,20 @@ function timeToMiliseconds(hours: number = 0, minutes: number = 0, seconds: numb
 const { setEventsToRecorder, getEventsToRecorder } = useEventsToRecorderStore()
 
 const listTasksRef = ref([])
+const listIndexTasksEditable = ref([])
+
+function setToEdit(indexTask: number) {
+  listIndexTasksEditable.value[indexTask] = indexTask
+}
+
+function saveChanges(indexTask: number) {
+  delete listIndexTasksEditable.value[indexTask]
+}
+
+function cancelChanges(indexTask: number) {
+  delete listIndexTasksEditable.value[indexTask]
+}
+
 const listTasksComputed = computed((): TasksInterface[] => {
   return listTasksRef.value ?? []
 })
@@ -127,49 +248,6 @@ onMounted(() => {
 })
 </script>
 
-<template>
-  <img alt="logo" class="logo" src="./assets/electron.svg" />
-  <div class="creator">Daily Reminder Notifications</div>
-  <div class="text">
-    Añade tus
-    <span class="vue">tareas</span>
-    y/o
-    <span class="vue">eventos</span>
-    especiales y te las
-    <span class="ts">Recordaré</span>
-  </div>
-  <p class="tip">
-    A continuación se mostrarán todos los <code>eventos</code> o <code>tareas</code> que quieres que
-    te recuerde:
-  </p>
-  <table v-if="listTasksComputed.length > 0">
-    <tr>
-      <th>Tipo</th>
-      <th>Título</th>
-      <th>Descripción</th>
-      <th>Fecha</th>
-      <th>Configuración ⚙️</th>
-    </tr>
-    <tr v-for="task in listTasksComputed">
-      <td>{{ task.type }}</td>
-      <td>{{ task.title }}</td>
-      <td>{{ task.description }}</td>
-      <td><input type="date" readonly :value="formattedDate(task.specialDate)" /></td>
-      <td>Pronto</td>
-    </tr>
-  </table>
-  <table v-else>
-    <tr>
-      <th>Aun no tienes nada guardado 🗑️!</th>
-    </tr>
-  </table>
-  <div class="actions">
-    <div class="action">
-      <a target="_blank" rel="noreferrer" @click="sendNotification()">Show Notification</a>
-    </div>
-  </div>
-  <Versions />
-</template>
 <style scoped>
 table {
   background-color: var(--ev-button-alt-bg);
@@ -190,5 +268,43 @@ td > input {
 
 input {
   color: var(--ev-button-alt-text);
+}
+
+select {
+  color: var(--ev-button-alt-text);
+  background-color: transparent;
+  border: none;
+}
+
+select:disabled,
+input:read-only {
+  color: var(--ev-c-text-2);
+  background-color: transparent;
+  border: none;
+}
+
+::-webkit-calendar-picker-indicator {
+  filter: invert();
+  background-color: transparent;
+}
+
+input[type='button'] {
+  cursor: pointer;
+  text-decoration: none;
+  display: inline-block;
+  border: 1px solid var(--ev-button-alt-text);
+  text-align: center;
+  font-weight: 600;
+  white-space: nowrap;
+  border-radius: 20px;
+  padding: 0 20px;
+  line-height: 38px;
+  font-size: 14px;
+  color: var(--ev-button-alt-text);
+  background-color: var(--ev-button-alt-bg);
+}
+
+input[type='button']:hover {
+  background-color: var(--ev-c-text-2);
 }
 </style>
