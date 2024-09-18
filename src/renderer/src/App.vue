@@ -113,7 +113,18 @@
   </table>
   <div class="actions">
     <div class="action">
-      <a target="_blank" rel="noreferrer" @click="sendNotification()">Show Notification</a>
+      <a
+        target="_blank"
+        rel="noreferrer"
+        @click="
+          () => {
+            listTasksComputed.forEach((task) => {
+              sendNotification(task)
+            })
+          }
+        "
+        >Show Notification</a
+      >
     </div>
   </div>
   <Versions />
@@ -215,16 +226,14 @@ function armMessageBodyNotification(
   return `${prefixMessage} ${daysMessage} ${hoursMessage} ${minutesMessage} ${secondsMessage} para ${description}.`
 }
 
-function sendNotification() {
-  listTasksComputed.value.forEach((task) => {
-    const specialDay: Date = new Date(task.specialDate)
-    const { days, hours, minutes, seconds }: RemainingTimeInterface = remainingTime(specialDay)
+function sendNotification(task: TasksInterface) {
+  const specialDay: Date = new Date(task.specialDate)
+  const { days, hours, minutes, seconds }: RemainingTimeInterface = remainingTime(specialDay)
 
-    showNotificatoinHandle(
-      task.title,
-      armMessageBodyNotification(days, hours, minutes, seconds, task.description ?? '')
-    )
-  })
+  showNotificatoinHandle(
+    task.title,
+    armMessageBodyNotification(days, hours, minutes, seconds, task.description ?? '')
+  )
 }
 
 function timeToMiliseconds(hours: number = 0, minutes: number = 0, seconds: number = 0) {
@@ -257,9 +266,12 @@ const listTasksComputed = computed((): TasksInterface[] => {
 })
 
 function programNotifications() {
-  const intervalCalculated: number = timeToMiliseconds(0, 5, 0)
-  const timeInterval: number = intervalCalculated >= 1000 ? intervalCalculated : 1000
-  setInterval(sendNotification, timeInterval)
+  listTasksComputed.value.forEach((task) => {
+    const timeInterval: number = task.intervalRecorder >= 1000 ? task.intervalRecorder : 1000
+    setInterval(() => {
+      sendNotification(task)
+    }, timeInterval)
+  })
 }
 
 onMounted(() => {
@@ -281,7 +293,7 @@ onMounted(() => {
   setEventsToRecorder(preChargeEvents)
   console.log(getEventsToRecorder())
   listTasksRef.value = getEventsToRecorder()
-  //programNotifications()
+  programNotifications()
 })
 </script>
 
