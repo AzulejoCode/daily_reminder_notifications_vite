@@ -3,7 +3,8 @@
   "version": "1.0.0",
   "description": "Daily Reminder Notifications",
   "main": "./out/main/index.js",
-  "author": "example.com",
+  "author": "AzulejoCode",
+  "license": "MIT",
   "homepage": "https://electron-vite.org",
   "scripts": {
     "format": "prettier --write .",
@@ -23,6 +24,8 @@
   "dependencies": {
     "@electron-toolkit/preload": "^3.0.0",
     "@electron-toolkit/utils": "^3.0.0",
+    "@volar/language-server": "2.4.0-alpha.18",
+    "@vue/language-server": "2.0.28",
     "electron-updater": "^6.1.7"
   },
   "devDependencies": {
