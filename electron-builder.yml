@@ -1,5 +1,5 @@
-appId: com.electron.app
-productName: daily_reminder_notifications_vite
+appId: com.azulejocode.app
+productName: Daily Reminder Notifications
 directories:
   buildResources: build
 files:
