@@ -9,4 +9,5 @@ export interface TasksInterface {
   title: string
   description?: string
   specialDate: Date
+  intervalRecorder: number
 }

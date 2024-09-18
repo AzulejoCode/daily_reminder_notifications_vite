@@ -18,7 +18,8 @@
       <th>Tipo</th>
       <th>Título</th>
       <th>Descripción</th>
-      <th>Fecha</th>
+      <th>Vence</th>
+      <th>Recordar ⏰</th>
       <th>Configuración ⚙️</th>
     </tr>
     <tr v-for="(task, task_index) in listTasksComputed">
@@ -67,10 +68,20 @@
       </td>
       <td>
         <input
+          id="f_input_interval_recorder"
+          name="f_input_interval_recorder"
+          type="text"
+          :readonly="!listIndexTasksEditable.includes(task_index)"
+          :value="msToTime(task.intervalRecorder)"
+        />
+      </td>
+      <td style="border-right: none">
+        <input
           v-show="!listIndexTasksEditable.includes(task_index)"
           id="f_input_edit"
           name="f_input_edit"
           type="button"
+          style="width: 100%"
           value="✏️"
           @click="setToEdit(task_index)"
         />
@@ -79,6 +90,7 @@
           id="f_input_save_changes"
           name="f_input_save_changes"
           type="button"
+          style="width: 50%"
           value="✅"
           @click="saveChanges(task_index)"
         />
@@ -87,6 +99,7 @@
           id="f_input_discarg_changes"
           name="f_input_discarg_changes"
           type="button"
+          style="width: 50%"
           value="🚨"
           @click="cancelChanges(task_index)"
         />
@@ -107,7 +120,7 @@
 </template>
 <script setup lang="ts">
 import Versions from './components/Versions.vue'
-import { computed, onMounted, ref } from 'vue'
+import { computed, onMounted, Ref, ref } from 'vue'
 import imgNotificationUrl from './assets/electron.png'
 import { TasksInterface, TypeReminderEnum } from './util/EventReminder'
 
@@ -119,6 +132,19 @@ function formattedDate(dateToFormat: string) {
   console.assert(dateParsed instanceof Date)
   // Convertimos la fecha al formato YYYY-MM-DD
   return dateParsed.toISOString().substring(0, 10)
+}
+
+function msToTime(ms: number) {
+  let seconds = Math.floor((ms / 1000) % 60)
+  let minutes = Math.floor((ms / (1000 * 60)) % 60)
+  let hours = Math.floor((ms / (1000 * 60 * 60)) % 24)
+
+  // Formato de dos dígitos para horas, minutos y segundos
+  hours = hours < 10 ? '0' + hours : hours
+  minutes = minutes < 10 ? '0' + minutes : minutes
+  seconds = seconds < 10 ? '0' + seconds : seconds
+
+  return hours + ':' + minutes + ':' + seconds
 }
 
 const showNotificatoinHandle = (title: string, body: string) => {
@@ -196,7 +222,7 @@ function sendNotification() {
 
     showNotificatoinHandle(
       task.title,
-      armMessageBodyNotification(days, hours, minutes, seconds, task.description)
+      armMessageBodyNotification(days, hours, minutes, seconds, task.description ?? '')
     )
   })
 }
@@ -212,7 +238,7 @@ function timeToMiliseconds(hours: number = 0, minutes: number = 0, seconds: numb
 const { setEventsToRecorder, getEventsToRecorder } = useEventsToRecorderStore()
 
 const listTasksRef = ref([])
-const listIndexTasksEditable = ref([])
+const listIndexTasksEditable: Ref<number[]> = ref([])
 
 function setToEdit(indexTask: number) {
   listIndexTasksEditable.value[indexTask] = indexTask
@@ -241,13 +267,15 @@ onMounted(() => {
     {
       type: TypeReminderEnum.EVENT,
       title: 'Día libre 🥳',
-      specialDate: new Date('2024-09-31T23:59:59')
+      specialDate: new Date('2024-09-31T23:59:59'),
+      intervalRecorder: timeToMiliseconds(1, 0, 0)
     },
     {
       type: TypeReminderEnum.SPECIAL_EVENT,
       title: 'Fin jornada laboral 😏',
       description: 'DESCANSARRRR 😎🏖️',
-      specialDate: new Date('2024-09-18T18:00:00')
+      specialDate: new Date('2024-09-18T18:00:00'),
+      intervalRecorder: timeToMiliseconds(0, 59, 0)
     }
   ]
   setEventsToRecorder(preChargeEvents)
@@ -267,6 +295,16 @@ table {
 th {
   color: var(--ev-button-alt-text);
   font-weight: 600;
+}
+
+td {
+  border-right: 1px solid var(--ev-c-text-1);
+}
+
+td:has(> select:disabled),
+td:has(> input:disabled),
+td:has(> input:read-only) {
+  border-right: 1px solid var(--ev-c-text-2);
 }
 
 td > input {
