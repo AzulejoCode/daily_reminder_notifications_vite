@@ -1,6 +1,7 @@
 export enum TypeReminderEnum {
   TASK = 'Tarea',
-  EVENT = 'Evento'
+  EVENT = 'Evento',
+  SPECIAL_EVENT = 'Evento Especial'
 }
 
 export interface TasksInterface {

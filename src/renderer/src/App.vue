@@ -131,6 +131,12 @@ const showNotificatoinHandle = (title: string, body: string) => {
     icon: imgNotificationUrl
   })
   notification.onshow
+  setTimeout(
+    () => {
+      notification.close()
+    },
+    timeToMiliseconds(0, 0, 10)
+  )
 }
 
 interface RemainingTimeInterface {
@@ -167,7 +173,7 @@ function armMessageBodyNotification(
   hours: number,
   minutes: number,
   seconds: number,
-  title: string
+  description: string
 ) {
   console.warn({ days, hours, minutes, seconds })
 
@@ -180,16 +186,18 @@ function armMessageBodyNotification(
   minutesMessage = minutes > 1 ? `${minutes} minutos,` : minutesMessage
   let secondsMessage: string = seconds == 1 ? `${seconds} segundo` : ''
   secondsMessage = seconds > 1 ? `${seconds} segundos` : secondsMessage
-  return `${prefixMessage} ${daysMessage} ${hoursMessage} ${minutesMessage} ${secondsMessage} para ${title}.`
+  return `${prefixMessage} ${daysMessage} ${hoursMessage} ${minutesMessage} ${secondsMessage} para ${description}.`
 }
 
 function sendNotification() {
   listTasksComputed.value.forEach((task) => {
     const specialDay: Date = new Date(task.specialDate)
     const { days, hours, minutes, seconds }: RemainingTimeInterface = remainingTime(specialDay)
-    const title: string = task.title
 
-    showNotificatoinHandle(title, armMessageBodyNotification(days, hours, minutes, seconds, title))
+    showNotificatoinHandle(
+      task.title,
+      armMessageBodyNotification(days, hours, minutes, seconds, task.description)
+    )
   })
 }
 
@@ -236,9 +244,10 @@ onMounted(() => {
       specialDate: new Date('2024-09-31T23:59:59')
     },
     {
-      type: TypeReminderEnum.TASK,
-      title: 'Dormir 😴',
-      specialDate: new Date('2024-09-17T23:59:59')
+      type: TypeReminderEnum.SPECIAL_EVENT,
+      title: 'Fin jornada laboral 😏',
+      description: 'DESCANSARRRR 😎🏖️',
+      specialDate: new Date('2024-09-18T18:00:00')
     }
   ]
   setEventsToRecorder(preChargeEvents)
