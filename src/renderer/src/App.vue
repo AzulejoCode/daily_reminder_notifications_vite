@@ -13,9 +13,7 @@
     A continuación se mostrarán todos los <code>eventos</code> o <code>tareas</code> que quieres que
     te recuerde:
   </p>
-  <code>{{ listTasksRefModel }}</code
-  ><br />
-  <code>{{ listTasksRefModelCopy }}</code>
+
   <table v-if="listTasksRefModel.length > 0">
     <tr>
       <th>Tipo</th>
@@ -117,7 +115,7 @@
           id="f_input_save_changes"
           name="f_input_save_changes"
           type="button"
-          style="width: 50%"
+          style="width: 33%"
           value="✅"
           @click="saveChanges(task_index)"
         />
@@ -126,9 +124,100 @@
           id="f_input_discarg_changes"
           name="f_input_discarg_changes"
           type="button"
-          style="width: 50%"
+          style="width: 33%"
           value="🚨"
           @click="cancelChanges(task_index)"
+        />
+        <input
+          v-show="listIndexTasksEditable.includes(task_index)"
+          id="f_input_delete"
+          name="f_input_delete"
+          type="button"
+          style="width: 33%"
+          value="🗑️"
+          @click="deleteTask(task_index)"
+        />
+      </td>
+    </tr>
+    <tr>
+      <td>
+        <select id="f_input_type_add" v-model="taskAdd.type" name="f_input_type_add">
+          <option
+            v-for="(typeEvent, typeEventKey) in TypeReminderEnum"
+            :key="'task_index_add' + typeEventKey"
+            :value="typeEvent"
+          >
+            {{ typeEvent }}
+          </option>
+        </select>
+      </td>
+      <td>
+        <input
+          id="f_input_title_add"
+          v-model="taskAdd.title"
+          name="f_input_title_add"
+          type="text"
+          required
+        />
+      </td>
+      <td>
+        <input
+          id="f_input_description_add"
+          v-model="taskAdd.description"
+          name="f_input_description_add"
+          type="text"
+        />
+      </td>
+      <td>
+        <input
+          id="f_input_special_date_add"
+          v-model="taskAdd.specialDate"
+          v-date-directive="taskAdd.specialDate"
+          name="f_input_special_date_add"
+          type="date"
+          required
+        />
+      </td>
+      <td>
+        <input
+          id="f_input_interval_recorder_hours_add"
+          v-model="taskAdd.intervalRecorder.hours"
+          v-time-directive.hours="taskAdd.intervalRecorder.hours"
+          style="width: 45px"
+          name="f_input_interval_recorder_hours_add"
+          min="0"
+          type="number"
+          required
+        />:
+        <input
+          id="f_input_interval_recorder_minutes_add"
+          v-model="taskAdd.intervalRecorder.minutes"
+          v-time-directive.minutes="taskAdd.intervalRecorder.minutes"
+          style="width: 45px"
+          name="f_input_interval_recorder_minutes_add"
+          min="0"
+          type="number"
+          required
+        />:
+        <input
+          id="f_input_interval_recorder_seconds_add"
+          v-model="taskAdd.intervalRecorder.seconds"
+          v-time-directive.seconds="taskAdd.intervalRecorder.seconds"
+          style="width: 45px"
+          name="f_input_interval_recorder_seconds_add"
+          min="0"
+          type="number"
+          required
+        />
+      </td>
+      <td style="border-right: none">
+        <input
+          id="f_input_add"
+          name="f_input_add"
+          type="button"
+          style="width: 100%"
+          value="➕"
+          @click="addTask"
         />
       </td>
     </tr>
@@ -177,27 +266,20 @@ const vDateDirective = {
 }
 const vTimeDirective = {
   mounted: (el, binding) => {
-    console.log('mounted')
     if (binding.modifiers.hours) {
-      console.log('binding.modifiers.hours')
       el.value = binding.value
     } else if (binding.modifiers.minutes) {
-      console.log('binding.modifiers.minutes')
       el.value = binding.value
     } else if (binding.modifiers.seconds) {
-      console.log('binding.modifiers.seconds')
       el.value = binding.value
     }
   },
   beforeUpdate: (el, binding) => {
     if (binding.modifiers.hours) {
-      console.log('binding.modifiers.hours')
       el.value = binding.value
     } else if (binding.modifiers.minutes) {
-      console.log('binding.modifiers.minutes')
       el.value = binding.value
     } else if (binding.modifiers.seconds) {
-      console.log('binding.modifiers.seconds')
       el.value = binding.value
     }
   }
@@ -210,7 +292,6 @@ function formattedDate(dateToFormat: string | Date): string {
 }
 
 function msToTime(ms: number) {
-  console.warn(ms)
   const seconds = Math.floor((ms / 1000) % 60)
   const minutes = Math.floor((ms / (1000 * 60)) % 60)
   const hours = Math.floor((ms / (1000 * 60 * 60)) % 24)
@@ -285,8 +366,6 @@ function armMessageBodyNotification(
   seconds: number,
   description: string
 ) {
-  console.warn({ days, hours, minutes, seconds })
-
   const prefixMessage: string = days + hours + minutes + seconds <= 4 ? 'Queda' : 'Quedan'
   let daysMessage: string = days == 1 ? `${days} día,` : ''
   daysMessage = days > 1 ? `${days} días,` : daysMessage
@@ -321,7 +400,24 @@ const { setEventsToRecorder, getEventsToRecorder } = useEventsToRecorderStore()
 
 const listTasksRefModel = ref<TasksInterface[]>([])
 const listTasksRefModelCopy = ref<TasksInterface[]>([])
+const taskAdd = ref<TasksInterface>({
+  type: TypeReminderEnum.EVENT,
+  title: '',
+  description: undefined,
+  specialDate: new Date(),
+  intervalRecorder: {
+    hours: 0,
+    minutes: 0,
+    seconds: 0
+  }
+})
 const listIndexTasksEditable: Ref<number[]> = ref([])
+
+function addTask() {
+  if (taskAdd.value) {
+    listTasksRefModel.value.push(taskAdd.value)
+  }
+}
 
 function setToEdit(indexTask: number, task: TasksInterface) {
   listIndexTasksEditable.value[indexTask] = indexTask
@@ -340,6 +436,14 @@ function cancelChanges(indexTask: number) {
   delete listIndexTasksEditable.value[indexTask]
   listTasksRefModel.value[indexTask] = { ...listTasksRefModelCopy.value[indexTask] }
   delete listTasksRefModelCopy.value[indexTask]
+}
+
+function deleteTask(indexTask: number) {
+  const cooopy = [...listTasksRefModel.value]
+  delete cooopy[indexTask]
+  delete listIndexTasksEditable.value[indexTask]
+  delete listTasksRefModelCopy.value[indexTask]
+  listTasksRefModel.value = cooopy.filter((task) => task != undefined)
 }
 
 const listTasksComputed = computed((): TasksInterface[] => {
@@ -373,7 +477,7 @@ onMounted(() => {
       type: TypeReminderEnum.SPECIAL_EVENT,
       title: 'Fin jornada laboral 😏',
       description: 'DESCANSARRRR 😎🏖️',
-      specialDate: new Date('2024-09-18T18:00:00'),
+      specialDate: new Date('2024-09-19T18:00:00'),
       intervalRecorder: {
         hours: 0,
         minutes: 59,
@@ -384,7 +488,7 @@ onMounted(() => {
       type: TypeReminderEnum.SPECIAL_EVENT,
       title: 'Dormir 😴🛌',
       description: 'Ey, hora de ir a mimir💤 🥱️',
-      specialDate: new Date('2024-09-19T01:00:00'),
+      specialDate: new Date('2024-09-19T22:00:00'),
       intervalRecorder: {
         hours: 0,
         minutes: 0,
@@ -393,7 +497,6 @@ onMounted(() => {
     }
   ]
   setEventsToRecorder(preChargeEvents)
-  console.log(getEventsToRecorder())
   listTasksRefModel.value = getEventsToRecorder()
   programNotifications()
 })
