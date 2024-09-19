@@ -64,6 +64,7 @@
         <input
           id="f_input_special_date"
           v-model="task.specialDate"
+          v-date-directive="task.specialDate"
           name="f_input_special_date"
           type="date"
           :readonly="!listIndexTasksEditable.includes(task_index)"
@@ -71,10 +72,33 @@
       </td>
       <td>
         <input
-          id="f_input_interval_recorder"
-          v-model="task.intervalRecorder"
-          name="f_input_interval_recorder"
-          type="text"
+          id="f_input_interval_recorder_hours"
+          v-model="task.intervalRecorder.hours"
+          v-time-directive.hours="task.intervalRecorder.hours"
+          style="width: 45px"
+          name="f_input_interval_recorder_hours"
+          min="0"
+          type="number"
+          :readonly="!listIndexTasksEditable.includes(task_index)"
+        />:
+        <input
+          id="f_input_interval_recorder_minutes"
+          v-model="task.intervalRecorder.minutes"
+          v-time-directive.minutes="task.intervalRecorder.minutes"
+          style="width: 45px"
+          name="f_input_interval_recorder_minutes"
+          min="0"
+          type="number"
+          :readonly="!listIndexTasksEditable.includes(task_index)"
+        />:
+        <input
+          id="f_input_interval_recorder_seconds"
+          v-model="task.intervalRecorder.seconds"
+          v-time-directive.seconds="task.intervalRecorder.seconds"
+          style="width: 45px"
+          name="f_input_interval_recorder_seconds"
+          min="0"
+          type="number"
           :readonly="!listIndexTasksEditable.includes(task_index)"
         />
       </td>
@@ -140,15 +164,53 @@ import { TasksInterface, TypeReminderEnum } from './util/EventReminder'
 
 import { useEventsToRecorderStore } from './stores/eventsToRecorder'
 
-function formattedDate(dateToFormat: string | Date) {
-  const dateParsed = new Date(dateToFormat)
-  console.warn(dateParsed)
-  console.assert(dateParsed instanceof Date)
+const vDateDirective = {
+  mounted: (el, binding) => {
+    el.value = formattedDate(binding.value)
+  },
+  update: (el, binding) => {
+    el.value = formattedDate(binding.value)
+  },
+  beforeUpdate: (el, binding) => {
+    el.value = formattedDate(binding.value)
+  }
+}
+const vTimeDirective = {
+  mounted: (el, binding) => {
+    console.log('mounted')
+    if (binding.modifiers.hours) {
+      console.log('binding.modifiers.hours')
+      el.value = binding.value
+    } else if (binding.modifiers.minutes) {
+      console.log('binding.modifiers.minutes')
+      el.value = binding.value
+    } else if (binding.modifiers.seconds) {
+      console.log('binding.modifiers.seconds')
+      el.value = binding.value
+    }
+  },
+  beforeUpdate: (el, binding) => {
+    if (binding.modifiers.hours) {
+      console.log('binding.modifiers.hours')
+      el.value = binding.value
+    } else if (binding.modifiers.minutes) {
+      console.log('binding.modifiers.minutes')
+      el.value = binding.value
+    } else if (binding.modifiers.seconds) {
+      console.log('binding.modifiers.seconds')
+      el.value = binding.value
+    }
+  }
+}
+
+function formattedDate(dateToFormat: string | Date): string {
+  const dateParsed = dateToFormat != '' && dateToFormat ? new Date(dateToFormat) : new Date()
   // Convertimos la fecha al formato YYYY-MM-DD
   return dateParsed.toISOString().substring(0, 10)
 }
 
 function msToTime(ms: number) {
+  console.warn(ms)
   const seconds = Math.floor((ms / 1000) % 60)
   const minutes = Math.floor((ms / (1000 * 60)) % 60)
   const hours = Math.floor((ms / (1000 * 60 * 60)) % 24)
@@ -158,7 +220,15 @@ function msToTime(ms: number) {
   const minutesStr = minutes < 10 ? '0' + minutes : minutes
   const secondsStr = seconds < 10 ? '0' + seconds : seconds
 
-  return hoursStr + ':' + minutesStr + ':' + secondsStr
+  return { hours: hoursStr, minutes: minutesStr, seconds: secondsStr }
+}
+
+function timeToMilliseconds(hours: number, minutes: number, seconds: number): number {
+  const hoursToMs = hours * 60 * 60 * 1000 // 1 hora = 3600000 ms
+  const minutesToMs = minutes * 60 * 1000 // 1 minuto = 60000 ms
+  const secondsToMs = seconds * 1000 // 1 segundo = 1000 ms
+
+  return hoursToMs + minutesToMs + secondsToMs
 }
 
 const showNotificatoinHandle = (title: string, body: string) => {
@@ -255,7 +325,10 @@ const listIndexTasksEditable: Ref<number[]> = ref([])
 
 function setToEdit(indexTask: number, task: TasksInterface) {
   listIndexTasksEditable.value[indexTask] = indexTask
-  listTasksRefModelCopy.value[indexTask] = { ...task }
+  listTasksRefModelCopy.value[indexTask] = {
+    ...task,
+    intervalRecorder: { ...task.intervalRecorder }
+  }
 }
 
 function saveChanges(indexTask: number) {
@@ -275,7 +348,9 @@ const listTasksComputed = computed((): TasksInterface[] => {
 
 function programNotifications() {
   listTasksComputed.value.forEach((task) => {
-    const timeInterval: number = task.intervalRecorder >= 1000 ? task.intervalRecorder : 1000
+    const { hours, minutes, seconds } = task.intervalRecorder
+    const timeInMilliseconds = timeToMilliseconds(hours, minutes, seconds)
+    const timeInterval: number = timeInMilliseconds >= 1000 ? timeInMilliseconds : 1000
     setInterval(() => {
       sendNotification(task)
     }, timeInterval)
@@ -288,14 +363,33 @@ onMounted(() => {
       type: TypeReminderEnum.EVENT,
       title: 'Día libre 🥳',
       specialDate: new Date('2024-09-31T23:59:59'),
-      intervalRecorder: timeToMiliseconds(1, 0, 0)
+      intervalRecorder: {
+        hours: 1,
+        minutes: 0,
+        seconds: 0
+      }
     },
     {
       type: TypeReminderEnum.SPECIAL_EVENT,
       title: 'Fin jornada laboral 😏',
       description: 'DESCANSARRRR 😎🏖️',
       specialDate: new Date('2024-09-18T18:00:00'),
-      intervalRecorder: timeToMiliseconds(0, 59, 0)
+      intervalRecorder: {
+        hours: 0,
+        minutes: 59,
+        seconds: 0
+      }
+    },
+    {
+      type: TypeReminderEnum.SPECIAL_EVENT,
+      title: 'Dormir 😴🛌',
+      description: 'Ey, hora de ir a mimir💤 🥱️',
+      specialDate: new Date('2024-09-19T01:00:00'),
+      intervalRecorder: {
+        hours: 0,
+        minutes: 0,
+        seconds: 20
+      }
     }
   ]
   setEventsToRecorder(preChargeEvents)
