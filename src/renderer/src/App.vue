@@ -13,7 +13,10 @@
     A continuación se mostrarán todos los <code>eventos</code> o <code>tareas</code> que quieres que
     te recuerde:
   </p>
-  <table v-if="listTasksComputed.length > 0">
+  <code>{{ listTasksRefModel }}</code
+  ><br />
+  <code>{{ listTasksRefModelCopy }}</code>
+  <table v-if="listTasksRefModel.length > 0">
     <tr>
       <th>Tipo</th>
       <th>Título</th>
@@ -22,13 +25,13 @@
       <th>Recordar ⏰</th>
       <th>Configuración ⚙️</th>
     </tr>
-    <tr v-for="(task, task_index) in listTasksComputed">
+    <tr v-for="(task, task_index) in listTasksRefModel" :key="task_index + task.type">
       <td>
         <select
           :id="task_index + 'f_input_type'"
+          v-model="task.type"
           :name="task_index + 'f_input_type'"
           :disabled="!listIndexTasksEditable.includes(task_index)"
-          :value="task.type"
         >
           <option
             v-for="(typeEvent, typeEventKey) in TypeReminderEnum"
@@ -42,37 +45,37 @@
       <td>
         <input
           id="f_input_title"
+          v-model="task.title"
           name="f_input_title"
           type="text"
           :readonly="!listIndexTasksEditable.includes(task_index)"
-          :value="task.title"
         />
       </td>
       <td>
         <input
           id="f_input_description"
+          v-model="task.description"
           name="f_input_description"
           type="text"
           :readonly="!listIndexTasksEditable.includes(task_index)"
-          :value="task.description"
         />
       </td>
       <td>
         <input
           id="f_input_special_date"
+          v-model="task.specialDate"
           name="f_input_special_date"
           type="date"
           :readonly="!listIndexTasksEditable.includes(task_index)"
-          :value="formattedDate(task.specialDate)"
         />
       </td>
       <td>
         <input
           id="f_input_interval_recorder"
+          v-model="task.intervalRecorder"
           name="f_input_interval_recorder"
           type="text"
           :readonly="!listIndexTasksEditable.includes(task_index)"
-          :value="msToTime(task.intervalRecorder)"
         />
       </td>
       <td style="border-right: none">
@@ -83,7 +86,7 @@
           type="button"
           style="width: 100%"
           value="✏️"
-          @click="setToEdit(task_index)"
+          @click="setToEdit(task_index, task)"
         />
         <input
           v-show="listIndexTasksEditable.includes(task_index)"
@@ -246,23 +249,28 @@ function timeToMiliseconds(hours: number = 0, minutes: number = 0, seconds: numb
 
 const { setEventsToRecorder, getEventsToRecorder } = useEventsToRecorderStore()
 
-const listTasksRef = ref([])
+const listTasksRefModel = ref<TasksInterface[]>([])
+const listTasksRefModelCopy = ref<TasksInterface[]>([])
 const listIndexTasksEditable: Ref<number[]> = ref([])
 
-function setToEdit(indexTask: number) {
+function setToEdit(indexTask: number, task: TasksInterface) {
   listIndexTasksEditable.value[indexTask] = indexTask
+  listTasksRefModelCopy.value[indexTask] = { ...task }
 }
 
 function saveChanges(indexTask: number) {
   delete listIndexTasksEditable.value[indexTask]
+  delete listTasksRefModelCopy.value[indexTask]
 }
 
 function cancelChanges(indexTask: number) {
   delete listIndexTasksEditable.value[indexTask]
+  listTasksRefModel.value[indexTask] = { ...listTasksRefModelCopy.value[indexTask] }
+  delete listTasksRefModelCopy.value[indexTask]
 }
 
 const listTasksComputed = computed((): TasksInterface[] => {
-  return listTasksRef.value ?? []
+  return listTasksRefModel.value ?? []
 })
 
 function programNotifications() {
@@ -292,7 +300,7 @@ onMounted(() => {
   ]
   setEventsToRecorder(preChargeEvents)
   console.log(getEventsToRecorder())
-  listTasksRef.value = getEventsToRecorder()
+  listTasksRefModel.value = getEventsToRecorder()
   programNotifications()
 })
 </script>
